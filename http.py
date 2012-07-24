@@ -1,3 +1,4 @@
+# coding=utf-8
 import time
 import socket
 import dpkt
@@ -31,6 +32,7 @@ class HttpFilter(object):
 
     def __init__(self, reader):
         self.conn = dict()
+        self.rere = dict()
         self.reader = reader
 
     def __iter__(self):
@@ -41,8 +43,6 @@ class HttpFilter(object):
                 ip1, ip2 = map(socket.inet_ntoa, [ip.src, ip.dst])
                 l7 = ip.data
                 sport, dport = [l7.sport, l7.dport]
-                print "source", ip1,  sport
-                print "destination", ip2, dport
                 tupl = (ip.src, ip.dst, l7.sport, l7.dport)
                 if tupl in self.conn:
                     self.conn[tupl].append(l7.data)
@@ -53,9 +53,16 @@ class HttpFilter(object):
                     #print self.conn[tupl].chronometer(),
                     if stream[:4] == 'HTTP':
                         http = dpkt.http.Response(stream)
+                        k = (ip2, dport, ip1, sport)
+                        if k in self.rere:
+                            self.rere[k].response = http
+                            self.rere[k].delta = (time.time() -
+                                self.rere[k].start) * 1000000
+                            print self.rere[k]
                         #print "Response", http.status
                     else:
                         http = dpkt.http.Request(stream)
+                        self.rere[(ip1, sport, ip2, dport)] = RequestResponse(http)
                         #print "Request", http.method, http.uri
 
                     stream = stream[len(http):]
@@ -67,6 +74,20 @@ class HttpFilter(object):
                     pass
                 else:
                     yield http
+
+
+class RequestResponse(object):
+    def __init__(self, request):
+        self.request = request
+        self.response = None
+        self.delta = None
+        self.start = time.time()
+
+    def __str__(self):
+        return "%i µs %s %s => %s" % (self.delta,
+                self.request.method,
+                self.request.uri,
+                self.response.status)
 
 
 class Connection(object):
