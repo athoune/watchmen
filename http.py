@@ -6,6 +6,7 @@ import dpkt
 # code stolen from:
 # http://bramp.net/blog/2010/01/follow-http-stream-with-decompression/
 
+
 def tcp_flags(flags):
     ret = ''
     if flags & dpkt.tcp.TH_FIN:
@@ -25,7 +26,6 @@ def tcp_flags(flags):
     if flags & dpkt.tcp.TH_CWR:
         ret = ret + 'C'
     return ret
-conn = dict()
 
 
 class HttpFilter(object):
@@ -50,7 +50,6 @@ class HttpFilter(object):
                     self.conn[tupl] = Connection(l7.data)
                 try:
                     stream = self.conn[tupl].data
-                    #print self.conn[tupl].chronometer(),
                     if stream[:4] == 'HTTP':
                         http = dpkt.http.Response(stream)
                         k = (ip2, dport, ip1, sport)
@@ -58,12 +57,10 @@ class HttpFilter(object):
                             self.rere[k].response = http
                             self.rere[k].delta = (time.time() -
                                 self.rere[k].start) * 1000000
-                            print self.rere[k]
-                        #print "Response", http.status
+                            yield self.rere[k]
                     else:
                         http = dpkt.http.Request(stream)
                         self.rere[(ip1, sport, ip2, dport)] = RequestResponse(http)
-                        #print "Request", http.method, http.uri
 
                     stream = stream[len(http):]
                     if len(stream) == 0:
@@ -72,8 +69,6 @@ class HttpFilter(object):
                         self.conn[tupl] = Connection(stream)
                 except dpkt.UnpackError:
                     pass
-                else:
-                    yield http
 
 
 class RequestResponse(object):
@@ -84,9 +79,12 @@ class RequestResponse(object):
         self.start = time.time()
 
     def __str__(self):
-        return "%i µs %s %s => %s" % (self.delta,
+        return "%i µs %s http://%s%s %s/%s [%s]" % (self.delta,
                 self.request.method,
+                self.request.headers['host'],
                 self.request.uri,
+                len(self.request),
+                len(self.response),
                 self.response.status)
 
 
@@ -108,5 +106,4 @@ if __name__ == "__main__":
     src = dpkt.pcap.Reader(open('./test.dat', 'r'))
     f = HttpFilter(src)
     for a in f:
-        pass
-        #print a
+        print a
