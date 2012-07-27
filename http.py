@@ -103,7 +103,10 @@ class Connection(object):
         return (time.time() - self.start) * 1000
 
 if __name__ == "__main__":
-    src = dpkt.pcap.Reader(open('./test.dat', 'r'))
-    f = HttpFilter(src)
-    for a in f:
-        print a
+    import sys
+    source = sys.argv[1]
+    f = open('./test.dat', 'r')
+    src = dpkt.pcap.Reader(f)
+    filter = HttpFilter(src)
+    for rr in filter:
+        print rr
