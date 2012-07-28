@@ -28,48 +28,60 @@ def tcp_flags(flags):
     return ret
 
 
-class HttpFilter(object):
+class HttpHandler(object):
 
-    def __init__(self, reader):
+    def __init__(self):
         self.conn = dict()
         self.rere = dict()
+
+    def process(self, ts, pkt):
+        eth = dpkt.ethernet.Ethernet(pkt)
+        ip = eth.data
+        if ip.__class__ == dpkt.ip.IP and ip.data.__class__ == dpkt.tcp.TCP:
+            ip1, ip2 = map(socket.inet_ntoa, [ip.src, ip.dst])
+            l7 = ip.data
+            sport, dport = [l7.sport, l7.dport]
+            tupl = (ip.src, ip.dst, l7.sport, l7.dport)
+            if tupl in self.conn:
+                self.conn[tupl].append(l7.data)
+            else:
+                self.conn[tupl] = Connection(l7.data)
+            try:
+                response = None
+                stream = self.conn[tupl].data
+                if stream[:4] == 'HTTP':
+                    http = dpkt.http.Response(stream)
+                    k = (ip2, dport, ip1, sport)
+                    if k in self.rere:
+                        self.rere[k].response = http
+                        self.rere[k].delta = (time.time() -
+                            self.rere[k].start) * 1000000
+                        response = self.rere[k]
+                else:
+                    http = dpkt.http.Request(stream)
+                    self.rere[(ip1, sport, ip2, dport)] = RequestResponse(http)
+
+                stream = stream[len(http):]
+                if len(stream) == 0:
+                    del self.conn[tupl]
+                else:
+                    self.conn[tupl] = Connection(stream)
+                if response != None:
+                    return response
+            except dpkt.UnpackError:
+                pass
+
+
+class HttpReader(HttpHandler):
+    def __init__(self, reader):
+        super(HttpReader, self).__init__()
         self.reader = reader
 
     def __iter__(self):
         for ts, pkt in self.reader:
-            eth = dpkt.ethernet.Ethernet(pkt)
-            ip = eth.data
-            if ip.__class__ == dpkt.ip.IP and ip.data.__class__ == dpkt.tcp.TCP:
-                ip1, ip2 = map(socket.inet_ntoa, [ip.src, ip.dst])
-                l7 = ip.data
-                sport, dport = [l7.sport, l7.dport]
-                tupl = (ip.src, ip.dst, l7.sport, l7.dport)
-                if tupl in self.conn:
-                    self.conn[tupl].append(l7.data)
-                else:
-                    self.conn[tupl] = Connection(l7.data)
-                try:
-                    stream = self.conn[tupl].data
-                    if stream[:4] == 'HTTP':
-                        http = dpkt.http.Response(stream)
-                        k = (ip2, dport, ip1, sport)
-                        if k in self.rere:
-                            self.rere[k].response = http
-                            self.rere[k].delta = (time.time() -
-                                self.rere[k].start) * 1000000
-                            yield self.rere[k]
-                    else:
-                        http = dpkt.http.Request(stream)
-                        self.rere[(ip1, sport, ip2, dport)] = RequestResponse(http)
-
-                    stream = stream[len(http):]
-                    if len(stream) == 0:
-                        del self.conn[tupl]
-                    else:
-                        self.conn[tupl] = Connection(stream)
-                except dpkt.UnpackError:
-                    pass
-
+            r = self.process(ts, pkt)
+            if r != None:
+                yield r
 
 class RequestResponse(object):
     def __init__(self, request):
@@ -105,8 +117,8 @@ class Connection(object):
 if __name__ == "__main__":
     import sys
     source = sys.argv[1]
-    f = open('./test.dat', 'r')
+    f = open(source, 'r')
     src = dpkt.pcap.Reader(f)
-    filter = HttpFilter(src)
+    filter = HttpReader(src)
     for rr in filter:
         print rr

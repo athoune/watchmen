@@ -9,7 +9,7 @@ you will be able to use it with live data.
 Install
 -------
 
-    sudo aptitude install python-dpkt
+    sudo aptitude install python-dpkt python-pcap
 
 Test samples
 ------------
