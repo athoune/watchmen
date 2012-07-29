@@ -91,13 +91,14 @@ class RequestResponse(object):
         self.start = ts
 
     def __str__(self):
-        return "%i ms %s http://%s%s %s/%s [%s]" % (self.delta,
+        return "%i ms %s http://%s%s %s/%s [%s] %s" % (self.delta,
                 self.request.method,
                 self.request.headers['host'],
                 self.request.uri,
                 len(self.request),
                 len(self.response),
-                self.response.status)
+                self.response.status,
+                self.response.headers.get('content-type', 'unknow'))
 
 
 class Connection(object):
