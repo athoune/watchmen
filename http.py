@@ -88,7 +88,7 @@ class RequestResponse(object):
         self.request = request
         self.response = None
         self.delta = None
-        self.start = time.time()
+        self.start = time.time() # Be careful, doesn't work with replay.
 
     def __str__(self):
         return "%i µs %s http://%s%s %s/%s [%s]" % (self.delta,
