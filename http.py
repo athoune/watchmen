@@ -54,12 +54,11 @@ class HttpHandler(object):
                     k = (ip2, dport, ip1, sport)
                     if k in self.rere:
                         self.rere[k].response = http
-                        self.rere[k].delta = (time.time() -
-                            self.rere[k].start) * 1000000
+                        self.rere[k].delta = (ts - self.rere[k].start) * 1000
                         response = self.rere[k]
                 else:
                     http = dpkt.http.Request(stream)
-                    self.rere[(ip1, sport, ip2, dport)] = RequestResponse(http)
+                    self.rere[(ip1, sport, ip2, dport)] = RequestResponse(http, ts)
 
                 stream = stream[len(http):]
                 if len(stream) == 0:
@@ -83,15 +82,16 @@ class HttpReader(HttpHandler):
             if r != None:
                 yield r
 
+
 class RequestResponse(object):
-    def __init__(self, request):
+    def __init__(self, request, ts):
         self.request = request
         self.response = None
         self.delta = None
-        self.start = time.time() # Be careful, doesn't work with replay.
+        self.start = ts
 
     def __str__(self):
-        return "%i µs %s http://%s%s %s/%s [%s]" % (self.delta,
+        return "%i ms %s http://%s%s %s/%s [%s]" % (self.delta,
                 self.request.method,
                 self.request.headers['host'],
                 self.request.uri,
