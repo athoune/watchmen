@@ -16,17 +16,19 @@ not with 10.6). But, there is nice packages for Debian and Ubuntu.
 
     sudo aptitude install python-dpkt python-pcap
 
-Test samples
-------------
+Test post mortem analysis
+-------------------------
 
     sudo tcpdump -n -w test.dat -i en0 "tcp port 80"
-
-Test application
-----------------
 
 You need test.dat samples data.
 
     python http.py
+
+Test live analysis
+------------------
+
+    sudo ./flow.py -i en0
 
 Licence
 -------
