@@ -30,9 +30,10 @@ def tcp_flags(flags):
 
 class HttpHandler(object):
 
-    def __init__(self):
+    def __init__(self, options):
         self.conn = dict()
         self.rere = dict()
+        self.options = options
 
     def process(self, ts, pkt):
         eth = dpkt.ethernet.Ethernet(pkt)
