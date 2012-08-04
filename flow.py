@@ -3,19 +3,22 @@ from optparse import OptionParser
 import gzip
 from cStringIO import StringIO
 import json
+
 import pcap
 from http import HttpHandler
 
 parser = OptionParser()
 parser.add_option("-i", "--interface", dest="interface",
-        help="Interface to listen.", default=None)
+                  help="Interface to listen.", default=None)
 parser.add_option("-p", "--port", dest="port", default=80, type="int",
-        help="Port")
+                  help="Port")
 parser.add_option("-H", "--host", dest="host", help="Host")
 parser.add_option("-f", "--filter", dest="filter", help="BPF filter")
 parser.add_option("-s", "--slow", dest="slow", type="int",
-        help="filter call slower than")
-parser.add_option("-P", "--pretty", dest="pretty", action="append", help="Pretty print")
+                  help="filter call slower than")
+parser.add_option("-P", "--pretty", dest="pretty", action="append",
+                  help="Pretty print")
+parser.add_option("-c", "--csv", dest="csv", help="Write data to a csv file")
 
 (options, args) = parser.parse_args()
 
@@ -36,8 +39,11 @@ pc.setfilter(filter)
 h = HttpHandler(options)
 
 mimes = {
-    "json": "application/json"
-        }
+    "json": "application/json",
+    "txt": "text/plain"}
+
+if options.csv:
+    writer = open(options.csv, 'a')
 
 
 def process(ts, pkt):
@@ -46,6 +52,17 @@ def process(ts, pkt):
         if options.slow and r.delta < options.slow:
             return
         print r
+        if options.csv:
+            writer.write(",".join([
+                r.request.method,
+                r.request.headers['host'],
+                r.request.uri,
+                str(len(r.request)),
+                str(len(r.response)),
+                r.response.status,
+                r.response.headers.get('content-type', 'unknown')
+                ]))
+            writer.write("\n")
         if r.response.headers.get('content-encoding') == 'gzip':
             body = gzip.GzipFile(fileobj=StringIO(r.response.body)).read()
         else:
@@ -57,5 +74,6 @@ def process(ts, pkt):
             except Exception as e:
                 print e
                 print body
-
+        if r.response.headers.get('content-type') == mimes['txt']:
+            print body
 pc.loop(process)
