@@ -14,7 +14,7 @@ and pcap to spy the ethernet flow on your computer. This libraries are painful
 to install, pip doesn't works, and with a Mac, it's worst (it works with 10.8,
 not with 10.6). But, there is nice packages for Debian and Ubuntu.
 
-    sudo aptitude install python-dpkt python-pcap
+    sudo aptitude install python-dpkt python-pypcap
 
 Test post mortem analysis
 -------------------------
@@ -29,6 +29,7 @@ Test live analysis
 ------------------
 
     sudo ./flow.py -i en0
+
 
 Licence
 -------
