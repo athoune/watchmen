@@ -6,6 +6,7 @@ import json
 
 import pcap
 from http import HttpHandler
+from csv import CSVFile
 
 parser = OptionParser()
 parser.add_option("-i", "--interface", dest="interface",
@@ -43,7 +44,7 @@ mimes = {
     "txt": "text/plain"}
 
 if options.csv:
-    writer = open(options.csv, 'a')
+    writer = CSVFile(open(options.csv, 'a'))
 
 
 def process(ts, pkt):
@@ -53,16 +54,16 @@ def process(ts, pkt):
             return
         print r
         if options.csv:
-            writer.write(",".join([
+            writer.add_line(
+                r.start,
                 r.request.method,
                 r.request.headers['host'],
                 r.request.uri,
                 str(len(r.request)),
                 str(len(r.response)),
                 r.response.status,
-                r.response.headers.get('content-type', 'unknown')
-                ]))
-            writer.write("\n")
+                r.response.headers.get('content-type', 'unknown').split(';')[0]
+                )
         if r.response.headers.get('content-encoding') == 'gzip':
             body = gzip.GzipFile(fileobj=StringIO(r.response.body)).read()
         else:
