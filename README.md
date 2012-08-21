@@ -23,7 +23,7 @@ Test post mortem analysis
 
 You need test.dat samples data.
 
-    python http.py
+    ./flow.py --file test.dat
 
 Test live analysis
 ------------------
