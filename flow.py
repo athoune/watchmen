@@ -4,11 +4,12 @@ import gzip
 from cStringIO import StringIO
 import json
 
-import pcap
 from http import HttpHandler
 from csv import CSVFile
 
 parser = OptionParser()
+parser.add_option("-F", "--file", dest="file",
+                  help="Open a wireshark dump file", default=None)
 parser.add_option("-i", "--interface", dest="interface",
                   help="Interface to listen.", default=None)
 parser.add_option("-p", "--port", dest="port", default=80, type="int",
@@ -22,20 +23,6 @@ parser.add_option("-P", "--pretty", dest="pretty", action="append",
 parser.add_option("-c", "--csv", dest="csv", help="Write data to a csv file")
 
 (options, args) = parser.parse_args()
-
-pc = pcap.pcap(options.interface)
-filter = "tcp "
-filters = []
-if options.port:
-    filters.append("dst port %i or src port %i" % (options.port, options.port))
-if options.host:
-    filters.append("dst host %s or src host %s" % (options.host, options.host))
-filter += " and ".join(filters)
-if options.filter:
-    filter += " %s" % options.filter
-
-print "BPF filter:", filter
-pc.setfilter(filter)
 
 h = HttpHandler(options)
 
@@ -77,4 +64,26 @@ def process(ts, pkt):
                 print body
         if r.response.headers.get('content-type') == mimes['txt']:
             print body
-pc.loop(process)
+
+if options.file is None:
+    import pcap
+    pc = pcap.pcap(options.interface)
+    filter = "tcp "
+    filters = []
+    if options.port:
+        filters.append("dst port %i or src port %i" % (options.port, options.port))
+    if options.host:
+        filters.append("dst host %s or src host %s" % (options.host, options.host))
+    filter += " and ".join(filters)
+    if options.filter:
+        filter += " %s" % options.filter
+
+    print "BPF filter:", filter
+    pc.setfilter(filter)
+    pc.loop(process)
+else:
+    import dpkt
+    f = open(options.file, 'r')
+    src = dpkt.pcap.Reader(f)
+    for ts, pkt in src:
+        process(ts, pkt)

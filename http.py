@@ -66,7 +66,7 @@ class HttpHandler(object):
                     del self.conn[tupl]
                 else:
                     self.conn[tupl] = Connection(stream)
-                if response != None:
+                if response is not None:
                     return response
             except dpkt.UnpackError:
                 pass
@@ -80,7 +80,7 @@ class HttpReader(HttpHandler):
     def __iter__(self):
         for ts, pkt in self.reader:
             r = self.process(ts, pkt)
-            if r != None:
+            if r is not None:
                 yield r
 
 
@@ -92,7 +92,8 @@ class RequestResponse(object):
         self.start = ts
 
     def __str__(self):
-        return "%i ms %s http://%s%s %s/%s [%s] %s" % (self.delta,
+        return "%i ms %s http://%s%s %s/%s [%s] %s" % (
+                self.delta,
                 self.request.method,
                 self.request.headers['host'],
                 self.request.uri,
@@ -115,12 +116,3 @@ class Connection(object):
 
     def chronometer(self):
         return (time.time() - self.start) * 1000
-
-if __name__ == "__main__":
-    import sys
-    source = sys.argv[1]
-    f = open(source, 'r')
-    src = dpkt.pcap.Reader(f)
-    filter = HttpReader(src)
-    for rr in filter:
-        print rr
