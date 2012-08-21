@@ -18,6 +18,8 @@ parser.add_option("-H", "--host", dest="host", help="Host")
 parser.add_option("-f", "--filter", dest="filter", help="BPF filter")
 parser.add_option("-s", "--slow", dest="slow", type="int",
                   help="filter call slower than")
+parser.add_option("--fast", dest="fast",
+                  help="Filter call faster than", type="int")
 parser.add_option("-P", "--pretty", dest="pretty", action="append",
                   help="Pretty print")
 parser.add_option("-c", "--csv", dest="csv", help="Write data to a csv file")
@@ -32,6 +34,17 @@ mimes = {
 
 if options.csv:
     writer = CSVFile(open(options.csv, 'a'))
+    writer.add_line(
+            'start',
+            'time',
+            'method',
+            'host',
+            'uri',
+            'request_size',
+            'response_size',
+            'status',
+            'content_type'
+            )
 
 
 def process(ts, pkt):
@@ -39,10 +52,13 @@ def process(ts, pkt):
     if r is not None:
         if options.slow and r.delta < options.slow:
             return
+        if options.fast and r.delta > options.fast:
+            return
         print r
         if options.csv:
             writer.add_line(
                 r.start,
+                r.delta,
                 r.request.method,
                 r.request.headers['host'],
                 r.request.uri,
