@@ -22,6 +22,8 @@ parser.add_option("--fast", dest="fast",
 parser.add_option("-P", "--pretty", dest="pretty", action="store_true",
                   help="Pretty print")
 parser.add_option("-c", "--csv", dest="csv", help="Write data to a csv file")
+parser.add_option("-m", "--mime", dest="mimes", help="Filter on mime type",
+                  action="append")
 
 (options, args) = parser.parse_args()
 
@@ -69,6 +71,9 @@ def process(ts, pkt):
             return
         if options.fast and r.delta > options.fast:
             return
+        content_type = r.response.headers.get('content-type', '').split(';')[0]
+        if options.mimes is not None and content_type not in options.mimes:
+            return
         print r
         if options.csv:
             writer.add_line(
@@ -85,15 +90,12 @@ def process(ts, pkt):
             body = gzip.GzipFile(fileobj=StringIO(r.response.body)).read()
         else:
             body = r.response.body
-        content_type = r.response.headers.get('content-type', '').split(';')[0]
         if content_type in mimes.values():
             try:
                 print beautifier(types[content_type], body)
             except Exception as e:
                 print "error", e
                 print body
-        if r.response.headers.get('content-type') == mimes['txt']:
-            print body
 
 if options.file is None:
     import pcap
