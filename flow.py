@@ -19,7 +19,7 @@ parser.add_option("-s", "--slow", dest="slow", type="int",
                   help="filter call slower than")
 parser.add_option("--fast", dest="fast",
                   help="Filter call faster than", type="int")
-parser.add_option("-P", "--pretty", dest="pretty", action="append",
+parser.add_option("-P", "--pretty", dest="pretty", action="store_true",
                   help="Pretty print")
 parser.add_option("-c", "--csv", dest="csv", help="Write data to a csv file")
 
