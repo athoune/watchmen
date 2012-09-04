@@ -2,7 +2,6 @@
 from optparse import OptionParser
 import gzip
 from cStringIO import StringIO
-import json
 
 from http import HttpHandler
 from csv import CSVFile
@@ -30,7 +29,12 @@ h = HttpHandler(options)
 
 mimes = {
     "json": "application/json",
-    "txt": "text/plain"}
+    "txt": "text/plain",
+    "html": "text/html"}
+
+types = {}
+for k in mimes:
+    types[mimes[k]] = k
 
 if options.csv:
     writer = CSVFile(open(options.csv, 'a'))
@@ -43,8 +47,19 @@ if options.csv:
             'request_size',
             'response_size',
             'status',
-            'content_type'
-            )
+            'content_type')
+
+
+def beautifier(format, txt):
+    if format == "json":
+        from beautifier.json import parse
+    if format == "html":
+        from beautifier.html import parse
+    if format == "xml":
+        from beautifier.xml import parse
+    if format == "txt":
+        from beautifier.txt import parse
+    return parse(txt)
 
 
 def process(ts, pkt):
@@ -65,18 +80,17 @@ def process(ts, pkt):
                 str(len(r.request)),
                 str(len(r.response)),
                 r.response.status,
-                r.response.headers.get('content-type', 'unknown').split(';')[0]
-                )
+                r.response.headers.get('content-type', 'unknown').split(';')[0])
         if r.response.headers.get('content-encoding') == 'gzip':
             body = gzip.GzipFile(fileobj=StringIO(r.response.body)).read()
         else:
             body = r.response.body
-        if r.response.headers.get('content-type') == mimes['json']:
-            #print r.response.headers
+        content_type = r.response.headers.get('content-type', '').split(';')[0]
+        if content_type in mimes.values():
             try:
-                print json.dumps(json.loads(body), indent=2, sort_keys=True)
+                print beautifier(types[content_type], body)
             except Exception as e:
-                print e
+                print "error", e
                 print body
         if r.response.headers.get('content-type') == mimes['txt']:
             print body
