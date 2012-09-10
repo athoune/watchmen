@@ -17,6 +17,7 @@ parser.add_option("-H", "--host", dest="host", help="Host")
 parser.add_option("-f", "--filter", dest="filter", help="BPF filter")
 parser.add_option("-s", "--slow", dest="slow", type="int",
                   help="filter call slower than")
+parser.add_option("-S", "--status", dest="status", help="Status code")
 parser.add_option("--fast", dest="fast",
                   help="Filter call faster than", type="int")
 parser.add_option("-P", "--pretty", dest="pretty", action="store_true",
@@ -74,6 +75,11 @@ def process(ts, pkt):
         content_type = r.response.headers.get('content-type', '').split(';')[0]
         if options.mimes is not None and content_type not in options.mimes:
             return
+        if options.status:
+            if options.status[0] == '-' and r.response.status == options.status[1:]:
+                return
+            if r.response.status != options.status:
+                return
         print r
         if options.csv:
             writer.add_line(
