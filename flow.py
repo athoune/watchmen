@@ -126,7 +126,7 @@ if options.file is None:
 else:
     import dpkt
 
-    f = open(options.file, "r")
+    f = open(options.file, "rb")
     src = dpkt.pcap.Reader(f)
     for ts, pkt in src:
         process(ts, pkt)
