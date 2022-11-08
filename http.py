@@ -28,7 +28,7 @@ def tcp_flags(flags):
     return ret
 
 
-class HttpHandler(object):
+class HttpHandler():
     def __init__(self, options):
         self.conn = dict()
         self.rere = dict()
@@ -83,7 +83,7 @@ class HttpReader(HttpHandler):
                 yield r
 
 
-class RequestResponse(object):
+class RequestResponse():
     def __init__(self, request, ts):
         self.request = request
         self.response = None
@@ -103,7 +103,7 @@ class RequestResponse(object):
         )
 
 
-class Connection(object):
+class Connection():
     def __init__(self, data):
         self.start = time.time()
         self.data = data

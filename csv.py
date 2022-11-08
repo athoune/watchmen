@@ -1,4 +1,4 @@
-class CSVFile(object):
+class CSVFile():
     def __init__(self, f):
         self.file = f
 
