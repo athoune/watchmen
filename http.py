@@ -8,28 +8,27 @@ import dpkt
 
 
 def tcp_flags(flags):
-    ret = ''
+    ret = ""
     if flags & dpkt.tcp.TH_FIN:
-        ret = ret + 'F'
+        ret = ret + "F"
     if flags & dpkt.tcp.TH_SYN:
-        ret = ret + 'S'
+        ret = ret + "S"
     if flags & dpkt.tcp.TH_RST:
-        ret = ret + 'R'
+        ret = ret + "R"
     if flags & dpkt.tcp.TH_PUSH:
-        ret = ret + 'P'
+        ret = ret + "P"
     if flags & dpkt.tcp.TH_ACK:
-        ret = ret + 'A'
+        ret = ret + "A"
     if flags & dpkt.tcp.TH_URG:
-        ret = ret + 'U'
+        ret = ret + "U"
     if flags & dpkt.tcp.TH_ECE:
-        ret = ret + 'E'
+        ret = ret + "E"
     if flags & dpkt.tcp.TH_CWR:
-        ret = ret + 'C'
+        ret = ret + "C"
     return ret
 
 
 class HttpHandler(object):
-
     def __init__(self, options):
         self.conn = dict()
         self.rere = dict()
@@ -50,7 +49,7 @@ class HttpHandler(object):
             try:
                 response = None
                 stream = self.conn[tupl].data
-                if stream[:4] == 'HTTP':
+                if stream[:4] == "HTTP":
                     http = dpkt.http.Response(stream)
                     k = (ip2, dport, ip1, sport)
                     if k in self.rere:
@@ -61,7 +60,7 @@ class HttpHandler(object):
                     http = dpkt.http.Request(stream)
                     self.rere[(ip1, sport, ip2, dport)] = RequestResponse(http, ts)
 
-                stream = stream[len(http):]
+                stream = stream[len(http) :]
                 if len(stream) == 0:
                     del self.conn[tupl]
                 else:
@@ -93,14 +92,15 @@ class RequestResponse(object):
 
     def __str__(self):
         return "%i ms %s http://%s%s %s/%s [%s] %s" % (
-                self.delta,
-                self.request.method,
-                self.request.headers['host'],
-                self.request.uri,
-                len(self.request),
-                len(self.response),
-                self.response.status,
-                self.response.headers.get('content-type', 'unknow'))
+            self.delta,
+            self.request.method,
+            self.request.headers["host"],
+            self.request.uri,
+            len(self.request),
+            len(self.response),
+            self.response.status,
+            self.response.headers.get("content-type", "unknow"),
+        )
 
 
 class Connection(object):
