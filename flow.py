@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from optparse import OptionParser
 import gzip
-from cStringIO import StringIO
+from io import StringIO
 
 from http import HttpHandler
 from csv import CSVFile
@@ -80,7 +80,7 @@ def process(ts, pkt):
                 return
             if r.response.status != options.status:
                 return
-        print r
+        print(r)
         if options.csv:
             writer.add_line(
                 r.start,
@@ -96,12 +96,12 @@ def process(ts, pkt):
             body = gzip.GzipFile(fileobj=StringIO(r.response.body)).read()
         else:
             body = r.response.body
-        if content_type in mimes.values():
+        if content_type in list(mimes.values()):
             try:
-                print beautifier(types[content_type], body)
+                print(beautifier(types[content_type], body))
             except Exception as e:
-                print "error", e
-                print body
+                print("error", e)
+                print(body)
 
 if options.file is None:
     import pcap
@@ -116,7 +116,7 @@ if options.file is None:
     if options.filter:
         filter += " %s" % options.filter
 
-    print "BPF filter:", filter
+    print("BPF filter:", filter)
     pc.setfilter(filter)
     pc.loop(process)
 else:
