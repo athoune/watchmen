@@ -1,4 +1,4 @@
-import json
+from . import json
 
 
 def parse(txt):

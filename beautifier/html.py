@@ -1,5 +1,5 @@
 from lxml import etree
-from cStringIO import StringIO
+from io import StringIO
 from pygments import highlight
 from pygments.lexers import HtmlLexer
 from pygments.formatters import Terminal256Formatter

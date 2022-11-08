@@ -1,5 +1,5 @@
 from lxml import etree
-from cStringIO import StringIO
+from io import StringIO
 
 
 def parse(txt):
