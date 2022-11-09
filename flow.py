@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from optparse import OptionParser
 import gzip
-from io import StringIO
+from io import StringIO, BytesIO
 
 from http import HttpHandler
 from csv import CSVFile
@@ -68,42 +68,42 @@ def beautifier(format, txt):
 
 def process(ts, pkt):
     r = h.process(ts, pkt)
-    if r is not None:
-        if options.slow and r.delta < options.slow:
+    if r is None:
+        return
+    if options.slow and r.delta < options.slow:
+        return
+    if options.fast and r.delta > options.fast:
+        return
+    content_type = r.response.headers.get("content-type", "").split(";")[0]
+    if options.mimes is not None and content_type not in options.mimes:
+        return
+    if options.status:
+        if options.status[0] == "-" and r.response.status == options.status[1:]:
             return
-        if options.fast and r.delta > options.fast:
+        if r.response.status != options.status:
             return
-        content_type = r.response.headers.get("content-type", "").split(";")[0]
-        if options.mimes is not None and content_type not in options.mimes:
-            return
-        if options.status:
-            if options.status[0] == "-" and r.response.status == options.status[1:]:
-                return
-            if r.response.status != options.status:
-                return
-        print(r)
-        if options.csv:
-            writer.add_line(
-                r.start,
-                r.delta,
-                r.request.method,
-                r.request.headers["host"],
-                r.request.uri,
-                str(len(r.request)),
-                str(len(r.response)),
-                r.response.status,
-                r.response.headers.get("content-type", "unknown").split(";")[0],
-            )
-        if r.response.headers.get("content-encoding") == "gzip":
-            body = gzip.GzipFile(fileobj=StringIO(r.response.body)).read()
-        else:
-            body = r.response.body
-        if content_type in list(mimes.values()):
-            try:
-                print(beautifier(types[content_type], body))
-            except Exception as e:
-                print("error", e)
-                print(body)
+    if options.csv:
+        writer.add_line(
+            r.start,
+            r.delta,
+            r.request.method,
+            r.request.headers["host"],
+            r.request.uri,
+            str(len(r.request)),
+            str(len(r.response)),
+            r.response.status,
+            r.response.headers.get("content-type", "unknown").split(";")[0],
+        )
+    if r.response.headers.get("content-encoding") == "gzip":
+        body = gzip.GzipFile(fileobj=BytesIO(r.response.body)).read()
+    else:
+        body = r.response.body
+    if content_type in list(mimes.values()):
+        try:
+            print(beautifier(types[content_type], body))
+        except Exception as e:
+            print("error", e)
+            print(body)
 
 
 if options.file is None:
@@ -126,7 +126,7 @@ if options.file is None:
 else:
     import dpkt
 
-    f = open(options.file, "rb")
-    src = dpkt.pcap.Reader(f)
-    for ts, pkt in src:
-        process(ts, pkt)
+    with open(options.file, "rb") as f:
+        src = dpkt.pcap.Reader(f)
+        for ts, pkt in src:
+            process(ts, pkt)

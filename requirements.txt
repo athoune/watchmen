@@ -1,2 +1,4 @@
 dpkt
 pypcap
+lxml
+pygments

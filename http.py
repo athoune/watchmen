@@ -1,6 +1,8 @@
 # coding=utf-8
 import time
 import socket
+import io
+
 import dpkt
 
 # code stolen from:
@@ -37,7 +39,7 @@ class HttpHandler():
     def process(self, ts, pkt):
         eth = dpkt.ethernet.Ethernet(pkt)
         ip = eth.data
-        if ip.__class__ == dpkt.ip.IP and ip.data.__class__ == dpkt.tcp.TCP:
+        if isinstance(ip, dpkt.ip.IP) and isinstance(ip.data, dpkt.tcp.TCP):
             ip1, ip2 = map(socket.inet_ntoa, [ip.src, ip.dst])
             l7 = ip.data
             sport, dport = [l7.sport, l7.dport]
@@ -48,8 +50,8 @@ class HttpHandler():
                 self.conn[tupl] = Connection(l7.data)
             try:
                 response = None
-                stream = self.conn[tupl].data
-                if stream[:4] == "HTTP":
+                stream = self.conn[tupl].data.getvalue()
+                if stream[:4] == b"HTTP":
                     http = dpkt.http.Response(stream)
                     k = (ip2, dport, ip1, sport)
                     if k in self.rere:
@@ -67,7 +69,7 @@ class HttpHandler():
                     self.conn[tupl] = Connection(stream)
                 if response is not None:
                     return response
-            except dpkt.UnpackError:
+            except dpkt.UnpackError as e:
                 pass
 
 
@@ -94,7 +96,7 @@ class RequestResponse():
         return "%i ms %s http://%s%s %s/%s [%s] %s" % (
             self.delta,
             self.request.method,
-            self.request.headers["host"],
+            self.request.headers.get("host"),
             self.request.uri,
             len(self.request),
             len(self.response),
@@ -104,12 +106,12 @@ class RequestResponse():
 
 
 class Connection():
-    def __init__(self, data):
+    def __init__(self, data: bytes):
         self.start = time.time()
-        self.data = data
+        self.data = io.BytesIO(data)
 
-    def append(self, data):
-        self.data += data
+    def append(self, data: bytes):
+        self.data.write(data)
 
     def __len__(self):
         return len(self.data)
